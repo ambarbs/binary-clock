@@ -1,29 +1,28 @@
+// app/components/clock/BinaryClock.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import DigitColumn from "@components/clock/DigitColumn";
 import PureColumn from "@components/clock/PureColumn";
 import useNow from "@hooks/useNow";
+import useSettings from "@hooks/useSettings";
 import { pad, splitDigits } from "@utils/time";
-import { hexToRGBA } from "@utils/color"; // ⬅️ import to derive glow colors
-
-type Mode = "BCD" | "PURE";
+import { hexToRGBA } from "@utils/color"; // if you added color utils for glow
 
 export default function BinaryClock() {
-  const [is24h, setIs24h] = useState(true);
-  const [showSeconds, setShowSeconds] = useState(true);
-  const [showLabels, setShowLabels] = useState(true);
-  const [mode, setMode] = useState<Mode>("BCD");
-  const [ledColor, setLedColor] = useState("#22d3ee"); // cyan-400
-
   const now = useNow();
   const tick = now.getSeconds();
 
+  // Persisted UI state
+  const { is24h, showSeconds, showLabels, mode, ledColor, set, hydrated } =
+    useSettings();
+
+  // Time parts
   const h = now.getHours();
   const m = now.getMinutes();
   const s = now.getSeconds();
-
   const displayH = is24h ? h : h % 12 || 12;
+
   const [hT, hU] = splitDigits(displayH);
   const [mT, mU] = splitDigits(m);
   const [sT, sU] = splitDigits(s);
@@ -37,32 +36,34 @@ export default function BinaryClock() {
   const minutesTensActive = 3; // 0–5
   const secondsTensActive = 3; // 0–5
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts -> write through settings
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const k = e.key.toLowerCase();
-      if (k === "t") setIs24h((v) => !v);
-      if (k === "s") setShowSeconds((v) => !v);
-      if (k === "l") setShowLabels((v) => !v);
-      if (k === "b") setMode((v) => (v === "BCD" ? "PURE" : "BCD"));
+      if (k === "t") set("is24h", (v) => !v);
+      if (k === "s") set("showSeconds", (v) => !v);
+      if (k === "l") set("showLabels", (v) => !v);
+      if (k === "b") set("mode", (v) => (v === "BCD" ? "PURE" : "BCD"));
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [set]);
 
-  const presets = ["#22d3ee", "#f43f5e", "#34d399", "#a78bfa", "#f59e0b"]; // cyan, rose, emerald, violet, amber
-
-  // ---- Pulsing frame glow (per second) ----
-  const frameBorder = hexToRGBA(ledColor, 0.55);
-  const weakGlow = `0 0 10px ${hexToRGBA(ledColor, 0.22)}, 0 0 26px ${hexToRGBA(
-    ledColor,
-    0.28
-  )}`;
-  const strongGlow = `0 0 18px ${hexToRGBA(
-    ledColor,
-    0.5
-  )}, 0 0 48px ${hexToRGBA(ledColor, 0.7)}`;
-  const pulseOn = tick % 2 === 0; // toggle once per second
+  // Optional: frame border/glow using selected colour (keep or remove as you like)
+  const frameBorder = hexToRGBA ? hexToRGBA(ledColor, 0.55) : undefined;
+  const weakGlow = hexToRGBA
+    ? `0 0 10px ${hexToRGBA(ledColor, 0.22)}, 0 0 26px ${hexToRGBA(
+        ledColor,
+        0.28
+      )}`
+    : undefined;
+  const strongGlow = hexToRGBA
+    ? `0 0 18px ${hexToRGBA(ledColor, 0.5)}, 0 0 48px ${hexToRGBA(
+        ledColor,
+        0.7
+      )}`
+    : undefined;
+  const pulseOn = tick % 2 === 0;
 
   return (
     <main
@@ -76,28 +77,28 @@ export default function BinaryClock() {
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-2 mb-6">
         <button
-          onClick={() => setIs24h((v) => !v)}
+          onClick={() => set("is24h", (v) => !v)}
           className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700"
           title="Toggle 12/24h [T]"
         >
           {is24h ? "24-hour" : "12-hour"}
         </button>
         <button
-          onClick={() => setShowSeconds((v) => !v)}
+          onClick={() => set("showSeconds", (v) => !v)}
           className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700"
           title="Toggle seconds [S]"
         >
           {showSeconds ? "Hide seconds" : "Show seconds"}
         </button>
         <button
-          onClick={() => setShowLabels((v) => !v)}
+          onClick={() => set("showLabels", (v) => !v)}
           className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700"
           title="Toggle labels [L]"
         >
           {showLabels ? "Hide labels" : "Show labels"}
         </button>
         <button
-          onClick={() => setMode((v) => (v === "BCD" ? "PURE" : "BCD"))}
+          onClick={() => set("mode", (v) => (v === "BCD" ? "PURE" : "BCD"))}
           className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700"
           title="Toggle BCD/Pure [B]"
         >
@@ -110,20 +111,22 @@ export default function BinaryClock() {
           <input
             type="color"
             value={ledColor}
-            onChange={(e) => setLedColor(e.target.value)}
+            onChange={(e) => set("ledColor", e.target.value)}
             className="h-9 w-12 cursor-pointer rounded-lg border border-slate-700 bg-slate-800"
             title="Pick LED colour"
           />
           <div className="flex items-center gap-2">
-            {presets.map((p) => (
-              <button
-                key={p}
-                onClick={() => setLedColor(p)}
-                className="h-6 w-6 rounded-full border border-slate-700"
-                style={{ backgroundColor: p }}
-                title={p}
-              />
-            ))}
+            {["#22d3ee", "#f43f5e", "#34d399", "#a78bfa", "#f59e0b"].map(
+              (p) => (
+                <button
+                  key={p}
+                  onClick={() => set("ledColor", p)}
+                  className="h-6 w-6 rounded-full border border-slate-700"
+                  style={{ backgroundColor: p }}
+                  title={p}
+                />
+              )
+            )}
           </div>
         </div>
       </div>
@@ -136,10 +139,7 @@ export default function BinaryClock() {
             className="ml-2 inline-block h-2 w-2 rounded-full"
             style={{
               backgroundColor: tick % 2 === 0 ? ledColor : "#475569",
-              boxShadow:
-                tick % 2 === 0
-                  ? `0 0 12px ${hexToRGBA(ledColor, 0.9)}`
-                  : undefined,
+              boxShadow: tick % 2 === 0 ? `0 0 12px ${ledColor}cc` : undefined,
             }}
             aria-hidden="true"
           />
