@@ -5,7 +5,7 @@ import DigitColumn from "@components/clock/DigitColumn";
 import PureColumn from "@components/clock/PureColumn";
 import useNow from "@hooks/useNow";
 import { pad, splitDigits } from "@utils/time";
-import { hexToRGBA } from "@utils/color";
+import { hexToRGBA } from "@utils/color"; // ⬅️ import to derive glow colors
 
 type Mode = "BCD" | "PURE";
 
@@ -37,9 +37,6 @@ export default function BinaryClock() {
   const minutesTensActive = 3; // 0–5
   const secondsTensActive = 3; // 0–5
 
-  const frameBorder = hexToRGBA(ledColor, 0.55);
-  const frameGlow = `0 0 24px ${hexToRGBA(ledColor, 0.35)}`;
-
   // Keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -55,10 +52,26 @@ export default function BinaryClock() {
 
   const presets = ["#22d3ee", "#f43f5e", "#34d399", "#a78bfa", "#f59e0b"]; // cyan, rose, emerald, violet, amber
 
+  // ---- Pulsing frame glow (per second) ----
+  const frameBorder = hexToRGBA(ledColor, 0.55);
+  const weakGlow = `0 0 10px ${hexToRGBA(ledColor, 0.22)}, 0 0 26px ${hexToRGBA(
+    ledColor,
+    0.28
+  )}`;
+  const strongGlow = `0 0 18px ${hexToRGBA(
+    ledColor,
+    0.5
+  )}, 0 0 48px ${hexToRGBA(ledColor, 0.7)}`;
+  const pulseOn = tick % 2 === 0; // toggle once per second
+
   return (
     <main
-      className="rounded-3xl p-6 md:p-8 border border-slate-700/60 bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur"
-      style={{ borderColor: frameBorder, boxShadow: frameGlow }}
+      className="rounded-3xl p-6 md:p-8 border bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur"
+      style={{
+        borderColor: frameBorder,
+        boxShadow: pulseOn ? strongGlow : weakGlow,
+        transition: "box-shadow 520ms ease-in-out, border-color 160ms linear",
+      }}
     >
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-2 mb-6">
