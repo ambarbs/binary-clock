@@ -5,6 +5,7 @@ import DigitColumn from "@components/clock/DigitColumn";
 import PureColumn from "@components/clock/PureColumn";
 import useNow from "@hooks/useNow";
 import { pad, splitDigits } from "@utils/time";
+import { hexToRGBA } from "@utils/color";
 
 type Mode = "BCD" | "PURE";
 
@@ -13,6 +14,7 @@ export default function BinaryClock() {
   const [showSeconds, setShowSeconds] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
   const [mode, setMode] = useState<Mode>("BCD");
+  const [ledColor, setLedColor] = useState("#22d3ee"); // cyan-400
 
   const now = useNow();
   const tick = now.getSeconds();
@@ -35,6 +37,9 @@ export default function BinaryClock() {
   const minutesTensActive = 3; // 0–5
   const secondsTensActive = 3; // 0–5
 
+  const frameBorder = hexToRGBA(ledColor, 0.55);
+  const frameGlow = `0 0 24px ${hexToRGBA(ledColor, 0.35)}`;
+
   // Keyboard shortcuts
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -48,8 +53,13 @@ export default function BinaryClock() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const presets = ["#22d3ee", "#f43f5e", "#34d399", "#a78bfa", "#f59e0b"]; // cyan, rose, emerald, violet, amber
+
   return (
-    <main className="rounded-3xl p-6 md:p-8 border border-slate-700/60 bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur">
+    <main
+      className="rounded-3xl p-6 md:p-8 border border-slate-700/60 bg-gradient-to-br from-slate-800/70 to-slate-900/70 backdrop-blur"
+      style={{ borderColor: frameBorder, boxShadow: frameGlow }}
+    >
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-2 mb-6">
         <button
@@ -80,6 +90,29 @@ export default function BinaryClock() {
         >
           Mode: {mode}
         </button>
+
+        {/* LED colour picker */}
+        <div className="flex items-center gap-2 ml-auto">
+          <label className="text-sm text-slate-400">LED</label>
+          <input
+            type="color"
+            value={ledColor}
+            onChange={(e) => setLedColor(e.target.value)}
+            className="h-9 w-12 cursor-pointer rounded-lg border border-slate-700 bg-slate-800"
+            title="Pick LED colour"
+          />
+          <div className="flex items-center gap-2">
+            {presets.map((p) => (
+              <button
+                key={p}
+                onClick={() => setLedColor(p)}
+                className="h-6 w-6 rounded-full border border-slate-700"
+                style={{ backgroundColor: p }}
+                title={p}
+              />
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Human-readable time */}
@@ -87,11 +120,14 @@ export default function BinaryClock() {
         <div className="font-mono text-3xl md:text-5xl tabular-nums tracking-tight">
           {textTime}
           <span
-            className={`ml-2 inline-block h-2 w-2 rounded-full ${
-              tick % 2 === 0
-                ? "bg-cyan-400 shadow-[0_0_12px_rgba(0,200,255,0.9)]"
-                : "bg-slate-600"
-            }`}
+            className="ml-2 inline-block h-2 w-2 rounded-full"
+            style={{
+              backgroundColor: tick % 2 === 0 ? ledColor : "#475569",
+              boxShadow:
+                tick % 2 === 0
+                  ? `0 0 12px ${hexToRGBA(ledColor, 0.9)}`
+                  : undefined,
+            }}
             aria-hidden="true"
           />
         </div>
@@ -118,6 +154,7 @@ export default function BinaryClock() {
               maxBits={4}
               activeBits={hoursTensActive}
               showLabel={showLabels}
+              color={ledColor}
             />
             <DigitColumn
               digit={hU}
@@ -125,6 +162,7 @@ export default function BinaryClock() {
               maxBits={4}
               activeBits={4}
               showLabel={showLabels}
+              color={ledColor}
             />
             <DigitColumn
               digit={mT}
@@ -132,6 +170,7 @@ export default function BinaryClock() {
               maxBits={4}
               activeBits={minutesTensActive}
               showLabel={showLabels}
+              color={ledColor}
             />
             <DigitColumn
               digit={mU}
@@ -139,6 +178,7 @@ export default function BinaryClock() {
               maxBits={4}
               activeBits={4}
               showLabel={showLabels}
+              color={ledColor}
             />
             {showSeconds && (
               <>
@@ -148,6 +188,7 @@ export default function BinaryClock() {
                   maxBits={4}
                   activeBits={secondsTensActive}
                   showLabel={showLabels}
+                  color={ledColor}
                 />
                 <DigitColumn
                   digit={sU}
@@ -155,6 +196,7 @@ export default function BinaryClock() {
                   maxBits={4}
                   activeBits={4}
                   showLabel={showLabels}
+                  color={ledColor}
                 />
               </>
             )}
@@ -178,6 +220,7 @@ export default function BinaryClock() {
               bits={is24h ? 5 : 4}
               showLabel={showLabels}
               weights={is24h ? [16, 8, 4, 2, 1] : [8, 4, 2, 1]}
+              color={ledColor}
             />
             <PureColumn
               value={m}
@@ -185,6 +228,7 @@ export default function BinaryClock() {
               bits={6}
               showLabel={showLabels}
               weights={[32, 16, 8, 4, 2, 1]}
+              color={ledColor}
             />
             {showSeconds && (
               <PureColumn
@@ -193,6 +237,7 @@ export default function BinaryClock() {
                 bits={6}
                 showLabel={showLabels}
                 weights={[32, 16, 8, 4, 2, 1]}
+                color={ledColor}
               />
             )}
           </div>

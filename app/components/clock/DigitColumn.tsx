@@ -1,5 +1,5 @@
-import Dot from "./Dot";
-import { toBits } from "@/utils/bits";
+import Dot from "@components/clock/Dot";
+import { toBits } from "@utils/bits";
 
 type Props = {
   digit: number;
@@ -7,6 +7,7 @@ type Props = {
   maxBits?: number; // usually 4
   activeBits?: number; // e.g. tens-of-hours uses 2 bits
   showLabel: boolean;
+  color?: string;
 };
 
 export default function DigitColumn({
@@ -15,6 +16,7 @@ export default function DigitColumn({
   maxBits = 4,
   activeBits = 4,
   showLabel,
+  color = "#22d3ee",
 }: Props) {
   const bits = toBits(digit, maxBits);
   const weights = [8, 4, 2, 1].slice(4 - maxBits);
@@ -31,7 +33,11 @@ export default function DigitColumn({
                 isActiveRow ? "opacity-100" : "opacity-40"
               }`}
             >
-              <Dot on={isActiveRow && !!b} title={`${label} ${w}`} />
+              <Dot
+                on={isActiveRow && !!b}
+                title={`${label} ${w}`}
+                color={color}
+              />
               <span className="text-xs tabular-nums text-slate-400 select-none w-6 text-right">
                 {w}
               </span>
